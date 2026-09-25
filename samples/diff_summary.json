@@ -1,0 +1,87 @@
+[
+   {
+      "op": "add",
+      "path_base": "/nested-feature",
+      "path_compare": "/nested-feature"
+   },
+   {
+      "op": "add",
+      "path_base": "/tags",
+      "path_compare": "/tags/4"
+   },
+   {
+      "op": "move",
+      "path_base": "/features/1",
+      "path_compare": "/features/2"
+   },
+   {
+      "op": "move",
+      "path_base": "/features/2",
+      "path_compare": "/features/1"
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/0",
+      "path_compare": "/tags/2"
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/1",
+      "path_compare": "/tags/0"
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/2",
+      "path_compare": "/tags/1"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/0",
+      "path_compare": "/teams/1"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/1",
+      "path_compare": "/teams/2"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/2",
+      "path_compare": "/teams/0"
+   },
+   {
+      "op": "remove",
+      "path_base": "/features/3",
+      "path_compare": "/features"
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/0/config/timeout",
+      "path_compare": "/features/0/config/timeout"
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/1/config/timeout",
+      "path_compare": "/features/2/config/timeout"
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/2/enabled",
+      "path_compare": "/features/1/enabled"
+   },
+   {
+      "op": "replace",
+      "path_base": "/metadata/version",
+      "path_compare": "/metadata/version"
+   },
+   {
+      "op": "replace",
+      "path_base": "/owner/team",
+      "path_compare": "/owner/team"
+   },
+   {
+      "op": "replace",
+      "path_base": "/status",
+      "path_compare": "/status"
+   }
+]

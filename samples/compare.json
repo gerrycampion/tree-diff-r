@@ -1,0 +1,58 @@
+{
+    "project": "demo",
+    "status": "published",
+    "owner": {
+        "name": "Alex",
+        "team": "platform-ops"
+    },
+    "tags": [
+        "backend",
+        "release",
+        "urgent",
+        "api",
+        "security"
+    ],
+    "features": [
+        {
+            "name": "authentication",
+            "enabled": true,
+            "config": {
+                "timeout": 45,
+                "mode": "basic"
+            }
+        },
+        {
+            "name": "billing",
+            "enabled": true,
+            "config": {
+                "timeout": 10,
+                "mode": "legacy"
+            }
+        },
+        {
+            "name": "search",
+            "enabled": true,
+            "config": {
+                "timeout": 25,
+                "mode": "full"
+            }
+        }
+    ],
+    "teams": [
+        "security",
+        "platform",
+        "data"
+    ],
+    "metadata": {
+        "version": 2,
+        "notes": "keep this"
+    },
+    "nested-feature": {
+        "name": "nested-feature",
+        "enabled": true,
+        "config": {
+            "timeout": 10,
+            "mode": "full"
+        }
+    }
+}

@@ -1,0 +1,160 @@
+[
+   {
+      "op": "add",
+      "path_base": "/nested-feature",
+      "path_compare": "/nested-feature",
+      "value_compare": {
+         "config": {
+            "mode": "full",
+            "timeout": 10
+         },
+         "enabled": true,
+         "name": "nested-feature"
+      }
+   },
+   {
+      "op": "add",
+      "path_base": "/tags",
+      "path_compare": "/tags/4",
+      "value_compare": "security"
+   },
+   {
+      "op": "move",
+      "path_base": "/features/1",
+      "path_compare": "/features/2",
+      "value_base": {
+         "config": {
+            "mode": "full",
+            "timeout": 15
+         },
+         "enabled": true,
+         "name": "search"
+      },
+      "value_compare": {
+         "config": {
+            "mode": "full",
+            "timeout": 25
+         },
+         "enabled": true,
+         "name": "search"
+      }
+   },
+   {
+      "op": "move",
+      "path_base": "/features/2",
+      "path_compare": "/features/1",
+      "value_base": {
+         "config": {
+            "mode": "legacy",
+            "timeout": 10
+         },
+         "enabled": false,
+         "name": "billing"
+      },
+      "value_compare": {
+         "config": {
+            "mode": "legacy",
+            "timeout": 10
+         },
+         "enabled": true,
+         "name": "billing"
+      }
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/0",
+      "path_compare": "/tags/2",
+      "value_base": "urgent",
+      "value_compare": "urgent"
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/1",
+      "path_compare": "/tags/0",
+      "value_base": "backend",
+      "value_compare": "backend"
+   },
+   {
+      "op": "move",
+      "path_base": "/tags/2",
+      "path_compare": "/tags/1",
+      "value_base": "release",
+      "value_compare": "release"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/0",
+      "path_compare": "/teams/1",
+      "value_base": "platform",
+      "value_compare": "platform"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/1",
+      "path_compare": "/teams/2",
+      "value_base": "data",
+      "value_compare": "data"
+   },
+   {
+      "op": "move",
+      "path_base": "/teams/2",
+      "path_compare": "/teams/0",
+      "value_base": "security",
+      "value_compare": "security"
+   },
+   {
+      "op": "remove",
+      "path_base": "/features/3",
+      "path_compare": "/features",
+      "value_base": {
+         "config": {
+            "mode": "full",
+            "timeout": 10
+         },
+         "enabled": true,
+         "name": "nested-feature"
+      }
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/0/config/timeout",
+      "path_compare": "/features/0/config/timeout",
+      "value_base": 30,
+      "value_compare": 45
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/1/config/timeout",
+      "path_compare": "/features/2/config/timeout",
+      "value_base": 15,
+      "value_compare": 25
+   },
+   {
+      "op": "replace",
+      "path_base": "/features/2/enabled",
+      "path_compare": "/features/1/enabled",
+      "value_base": false,
+      "value_compare": true
+   },
+   {
+      "op": "replace",
+      "path_base": "/metadata/version",
+      "path_compare": "/metadata/version",
+      "value_base": 1,
+      "value_compare": 2
+   },
+   {
+      "op": "replace",
+      "path_base": "/owner/team",
+      "path_compare": "/owner/team",
+      "value_base": "platform",
+      "value_compare": "platform-ops"
+   },
+   {
+      "op": "replace",
+      "path_base": "/status",
+      "path_compare": "/status",
+      "value_base": "draft",
+      "value_compare": "published"
+   }
+]
