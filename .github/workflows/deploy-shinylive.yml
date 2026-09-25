@@ -28,39 +28,25 @@ jobs:
         run: |
           install.packages(c('renv'), repos='https://cloud.r-project.org')
           renv::restore()
-
-      # - uses: r-lib/actions/setup-r-dependencies@v2
-
-      # - name: Install app and shinylive dependencies
-      #   shell: Rscript {0}
-      #   run: |
-      #     install.packages("pak", repos = "https://cloud.r-project.org")
-      #     pak::pkg_install(c("shiny", "jsonlite", "posit-dev/r-shinylive"))
-
-      - name: Export app to docs folder
-        shell: Rscript {0}
-        run: |
           shinylive::export(".", "docs")
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
+      - uses: actions/configure-pages@v6
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
+      - uses: actions/deploy-pages@v4
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   permissions:
+  #     pages: write
+  #     id-token: write
+
+  #   steps:
+  #     - uses: actions/deploy-pages@v4
