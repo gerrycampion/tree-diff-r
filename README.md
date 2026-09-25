@@ -62,6 +62,22 @@ compare <- jsonlite::fromJSON("samples/compare.json", simplifyVector = FALSE)
 print(diff_value(base, compare))
 ```
 
+## GitHub Pages / static export
+
+This repo includes a GitHub Actions workflow that exports the Shiny app to a static site with `r-shinylive` and publishes it to GitHub Pages.
+
+- Workflow: `.github/workflows/deploy-shinylive.yml`
+- Export directory: `docs/`
+- GitHub Pages source: GitHub Actions
+
+The app is exported with:
+
+```r
+shinylive::export(".", "docs")
+```
+
+After the workflow runs on `main`, the static app is available through the repository's GitHub Pages site.
+
 ## Sample data
 
 The project includes sample inputs in the `samples/` folder and an expected diff output in `samples/diff_paths.json`.
