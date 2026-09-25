@@ -27,7 +27,8 @@ This project mirrors the core behavior of the Python version in the workspace:
 3. Install the required R packages:
 
    ```powershell
-   Rscript -e "install.packages(c('shiny','jsonlite'), repos='https://cloud.r-project.org')"
+   Rscript -e "install.packages(c('renv'), repos='https://cloud.r-project.org')"
+   Rscript -e "renv::restore()"
    ```
 
 ## Run the Shiny app
@@ -65,19 +66,3 @@ print(diff_value(base, compare))
 
 The project includes sample inputs in the `samples/` folder and an expected diff output in `samples/diff_paths.json`.
 
-## Project layout
-
-```text
-tree-diff-r/
-├── R/
-│   └── tree_diff.R
-├── samples/
-│   ├── base.json
-│   ├── compare.json
-│   └── diff_paths.json
-├── tests/
-│   └── test_tree_diff.R
-├── app.R
-├── README.md
-└── .gitignore
-```
