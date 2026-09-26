@@ -32,7 +32,7 @@ jobs:
           pak::pak(
             unique(renv::dependencies(".")$Package)
           )
-          shinylive::export(".", "docs")s
+          shinylive::export(".", "docs")
 
       - uses: actions/configure-pages@v6
 
