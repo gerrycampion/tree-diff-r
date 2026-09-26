@@ -10,8 +10,7 @@ parse_json_input <- function(raw_text, label) {
 }
 
 ui <- shiny::fluidPage(
-  title = "tree-diff-r JSON diff v0.0.1",
-  shiny::titlePanel("tree-diff-r JSON diff"),
+  shiny::titlePanel("tree-diff-r JSON diff", windowTitle = "tree-diff-r JSON diff v0.0.1"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       width = 4,
