@@ -10,7 +10,7 @@ parse_json_input <- function(raw_text, label) {
 }
 
 ui <- shiny::fluidPage(
-  title= "tree-diff-r JSON diff v0.0.1",
+  title = "tree-diff-r JSON diff v0.0.1",
   shiny::titlePanel("tree-diff-r JSON diff"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
@@ -51,25 +51,28 @@ ui <- shiny::fluidPage(
 
 server <- function(input, output, session) {
   diff_result <- shiny::eventReactive(input$run_diff, {
-    tryCatch({
-      base_text <- if (!is.null(input$base_file$datapath)) {
-        paste(readLines(input$base_file$datapath, warn = FALSE), collapse = "\n")
-      } else {
-        input$base_text
-      }
+    tryCatch(
+      {
+        base_text <- if (!is.null(input$base_file$datapath)) {
+          paste(readLines(input$base_file$datapath, warn = FALSE), collapse = "\n")
+        } else {
+          input$base_text
+        }
 
-      compare_text <- if (!is.null(input$compare_file$datapath)) {
-        paste(readLines(input$compare_file$datapath, warn = FALSE), collapse = "\n")
-      } else {
-        input$compare_text
-      }
+        compare_text <- if (!is.null(input$compare_file$datapath)) {
+          paste(readLines(input$compare_file$datapath, warn = FALSE), collapse = "\n")
+        } else {
+          input$compare_text
+        }
 
-      base_data <- parse_json_input(base_text, "Base")
-      compare_data <- parse_json_input(compare_text, "Compare")
-      diff_value(base_data, compare_data)
-    }, error = function(err) {
-      list(error = conditionMessage(err))
-    })
+        base_data <- parse_json_input(base_text, "Base")
+        compare_data <- parse_json_input(compare_text, "Compare")
+        diff_value(base_data, compare_data)
+      },
+      error = function(err) {
+        list(error = conditionMessage(err))
+      }
+    )
   })
 
   output$diff_output <- shiny::renderPrint({
@@ -82,19 +85,22 @@ server <- function(input, output, session) {
     cat(jsonlite::toJSON(result, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null"))
   })
 
-  output$diff_table <- shiny::renderTable({
-    result <- diff_result()
-    if (!is.null(result$error) || length(result) == 0L) {
-      return(data.frame(op = character(), path_base = character(), path_compare = character()))
-    }
+  output$diff_table <- shiny::renderTable(
+    {
+      result <- diff_result()
+      if (!is.null(result$error) || length(result) == 0L) {
+        return(data.frame(op = character(), path_base = character(), path_compare = character()))
+      }
 
-    data.frame(
-      op = vapply(result, `[[`, character(1), "op", USE.NAMES = FALSE),
-      path_base = vapply(result, `[[`, character(1), "path_base", USE.NAMES = FALSE),
-      path_compare = vapply(result, `[[`, character(1), "path_compare", USE.NAMES = FALSE),
-      stringsAsFactors = FALSE
-    )
-  }, rownames = FALSE)
+      data.frame(
+        op = vapply(result, `[[`, character(1), "op", USE.NAMES = FALSE),
+        path_base = vapply(result, `[[`, character(1), "path_base", USE.NAMES = FALSE),
+        path_compare = vapply(result, `[[`, character(1), "path_compare", USE.NAMES = FALSE),
+        stringsAsFactors = FALSE
+      )
+    },
+    rownames = FALSE
+  )
 }
 
-shiny::shinyApp(ui = ui, server = server)
+shiny::shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))

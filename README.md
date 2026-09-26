@@ -27,9 +27,24 @@ This project mirrors the core behavior of the Python version in the workspace:
 3. Install the required R packages:
 
    ```powershell
-   Rscript -e "install.packages(c('renv'), repos='https://cloud.r-project.org')"
+   Rscript -e "install.packages(c('renv', 'languageserver', 'vscDebugger'), repos=c('https://cloud.r-project.org','https://manuelhentschel.r-universe.dev')"
    Rscript -e "renv::restore()"
    ```
+
+4. Allow an app through Controlled folder access:
+- Open the Start Menu, search for Windows Security, and open it.
+- Click on Virus & threat protection.
+- Scroll down to Ransomware protection and click Manage ransomware protection.
+- Click Allow an app through Controlled folder access.
+- Click Add an allowed app and select Recently blocked apps.
+- Locate rterm.exe in the list (usually found inside your R installation path, like C:\Program Files\R\R-x.x.x\bin\Rterm.exe) and choose to allow it.
+- Locate rscript.exe in the list (usually found inside your R installation path, like C:\Program Files\R\R-x.x.x\bin\Rscript.exe) and choose to allow it.
+
+## VS Code setup
+
+This project includes workspace recommendations for the VS Code R tooling.
+
+VS Code can install all recommended extensions automatically when you open the workspace and accept the prompt, or by running the command "Extensions: Install Recommended Extensions" from the Command Palette.
 
 ## Run the Shiny app
 
