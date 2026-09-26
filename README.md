@@ -11,6 +11,14 @@ This project mirrors the core behavior of the Python version in the workspace:
 - keeps list reordering and nested object changes readable
 - exposes the same diff logic in a Shiny app that lets a user paste JSON text or upload files
 
+## Live demo
+
+A hosted version of the app is available here:
+
+https://gerrycampion.github.io/tree-diff-r/
+
+> Note: the app may take a few seconds to load the first time because it is running as an `r-shinylive` static app.
+
 ## Install R on Windows
 
 1. Install R from CRAN:
