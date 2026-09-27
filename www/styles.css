@@ -80,6 +80,69 @@ body {
     padding: 14px 16px 16px;
 }
 
+.file-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.file-row .shiny-input-container {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.file-row .shiny-input-container>label {
+    display: block;
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.file-row .shiny-file-input {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0;
+    position: relative;
+}
+
+.file-row .shiny-file-input .btn-file {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    margin: 0;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-row .shiny-file-input .form-control {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+}
+
+.file-row .btn-secondary {
+    flex: 0 0 auto;
+    margin: 0;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-row .shiny-file-input-progress {
+    display: none;
+}
+
 .toolbar {
     display: flex;
     justify-content: flex-end;

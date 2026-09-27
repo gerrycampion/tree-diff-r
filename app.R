@@ -25,6 +25,23 @@ compute_diff <- function(base_text, compare_text) {
 base_sample_text <- paste(readLines(file.path("samples", "base.json"), warn = FALSE), collapse = "\n")
 compare_sample_text <- paste(readLines(file.path("samples", "compare.json"), warn = FALSE), collapse = "\n")
 
+pretty_json_text <- function(raw_text) {
+  text <- trimws(raw_text)
+  if (!nzchar(text)) {
+    return(text)
+  }
+
+  tryCatch(
+    {
+      parsed <- jsonlite::fromJSON(text, simplifyVector = FALSE, simplifyDataFrame = FALSE)
+      jsonlite::toJSON(parsed, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null")
+    },
+    error = function(err) {
+      raw_text
+    }
+  )
+}
+
 ui <- shiny::fluidPage(
   title = "tree-diff-r JSON diff v0.0.1",
   shiny::includeCSS("www/styles.css"),
@@ -45,13 +62,28 @@ ui <- shiny::fluidPage(
         shiny::div(class = "panel-header", "Base JSON"),
         shiny::div(
           class = "panel-body",
-          shiny::fileInput("base_file", "Upload base JSON", accept = c(".json", ".txt"), width = "100%"),
-          shiny::textAreaInput(
+          shiny::div(
+            class = "file-row",
+            shiny::fileInput("base_file", "Upload base JSON", accept = c(".json", ".txt"), width = "100%"),
+            shiny::actionButton("prettify_base", "Prettify", class = "btn-secondary")
+          ),
+          shinyAce::aceEditor(
             "base_text",
-            NULL,
             value = base_sample_text,
-            width = "100%",
-            height = "290px"
+            mode = "json",
+            theme = "tomorrow_night",
+            height = "360px",
+            debounce = 100,
+            fontSize = 13,
+            showLineNumbers = TRUE,
+            highlightActiveLine = TRUE,
+            showPrintMargin = FALSE,
+            showInvisibles = FALSE,
+            tabSize = 2,
+            useSoftTabs = TRUE,
+            wordWrap = FALSE,
+            minLines = 20,
+            maxLines = 40
           )
         )
       ),
@@ -60,13 +92,28 @@ ui <- shiny::fluidPage(
         shiny::div(class = "panel-header", "Compare JSON"),
         shiny::div(
           class = "panel-body",
-          shiny::fileInput("compare_file", "Upload compare JSON", accept = c(".json", ".txt"), width = "100%"),
-          shiny::textAreaInput(
+          shiny::div(
+            class = "file-row",
+            shiny::fileInput("compare_file", "Upload compare JSON", accept = c(".json", ".txt"), width = "100%"),
+            shiny::actionButton("prettify_compare", "Prettify", class = "btn-secondary")
+          ),
+          shinyAce::aceEditor(
             "compare_text",
-            NULL,
             value = compare_sample_text,
-            width = "100%",
-            height = "290px"
+            mode = "json",
+            theme = "tomorrow_night",
+            height = "360px",
+            debounce = 100,
+            fontSize = 13,
+            showLineNumbers = TRUE,
+            highlightActiveLine = TRUE,
+            showPrintMargin = FALSE,
+            showInvisibles = FALSE,
+            tabSize = 2,
+            useSoftTabs = TRUE,
+            wordWrap = FALSE,
+            minLines = 20,
+            maxLines = 40
           )
         )
       )
@@ -105,7 +152,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$base_file, {
     if (!is.null(input$base_file$datapath)) {
       base_text <- paste(readLines(input$base_file$datapath, warn = FALSE), collapse = "\n")
-      shiny::updateTextAreaInput(session, "base_text", value = base_text)
+      shinyAce::updateAceEditor(session, "base_text", value = base_text)
       reconstruct_diff()
     }
   })
@@ -113,9 +160,21 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$compare_file, {
     if (!is.null(input$compare_file$datapath)) {
       compare_text <- paste(readLines(input$compare_file$datapath, warn = FALSE), collapse = "\n")
-      shiny::updateTextAreaInput(session, "compare_text", value = compare_text)
+      shinyAce::updateAceEditor(session, "compare_text", value = compare_text)
       reconstruct_diff()
     }
+  })
+
+  shiny::observeEvent(input$prettify_base, {
+    pretty_text <- pretty_json_text(input$base_text)
+    shinyAce::updateAceEditor(session, "base_text", value = pretty_text)
+    reconstruct_diff()
+  })
+
+  shiny::observeEvent(input$prettify_compare, {
+    pretty_text <- pretty_json_text(input$compare_text)
+    shinyAce::updateAceEditor(session, "compare_text", value = pretty_text)
+    reconstruct_diff()
   })
 
   shiny::observeEvent(input$run_diff, {
