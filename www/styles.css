@@ -204,6 +204,29 @@ textarea {
     align-items: center;
 }
 
+.result-status {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.status-live {
+    color: var(--success);
+}
+
+.status-stale {
+    color: var(--warning);
+}
+
+.status-error {
+    color: #ef4444;
+}
+
+.result-status:empty {
+    display: none;
+}
+
 .result-body {
     padding: 16px;
 }

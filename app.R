@@ -127,7 +127,7 @@ ui <- shiny::fluidPage(
       shiny::div(
         class = "result-header",
         shiny::span("Diff output"),
-        shiny::span("live")
+        shiny::span(class = "result-status", shiny::uiOutput("diff_status_badge"))
       ),
       shiny::div(
         class = "result-body",
@@ -142,12 +142,35 @@ ui <- shiny::fluidPage(
 
 server <- function(input, output, session) {
   diff_result <- shiny::reactiveVal(compute_diff(base_sample_text, compare_sample_text))
+  diff_status <- shiny::reactiveVal("live")
+  last_computed <- shiny::reactiveValues(
+    base = base_sample_text,
+    compare = compare_sample_text
+  )
 
   reconstruct_diff <- function() {
     base_text <- input$base_text
     compare_text <- input$compare_text
-    diff_result(compute_diff(base_text, compare_text))
+    result <- compute_diff(base_text, compare_text)
+    diff_result(result)
+    last_computed$base <- base_text
+    last_computed$compare <- compare_text
+    diff_status(if (!is.null(result$error)) "error" else "live")
   }
+
+  shiny::observe(
+    {
+      current_base <- input$base_text
+      current_compare <- input$compare_text
+
+      if (!is.null(current_base) && !is.null(current_compare)) {
+        if (!identical(current_base, last_computed$base) || !identical(current_compare, last_computed$compare)) {
+          diff_status("stale")
+        }
+      }
+    },
+    priority = 100
+  )
 
   shiny::observeEvent(input$base_file, {
     if (!is.null(input$base_file$datapath)) {
@@ -179,6 +202,18 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$run_diff, {
     reconstruct_diff()
+  })
+
+  output$diff_status_badge <- shiny::renderUI({
+    status <- diff_status()
+
+    if (identical(status, "live")) {
+      shiny::tags$span("live", class = "status-live")
+    } else if (identical(status, "stale")) {
+      shiny::tags$span("stale", class = "status-stale")
+    } else {
+      shiny::tags$span("error", class = "status-error")
+    }
   })
 
   output$diff_output <- shiny::renderPrint({
