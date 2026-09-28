@@ -125,7 +125,7 @@ function parseNestedValueRange(text, index) {
 }
 
 function findJsonValueRange(text, pointer) {
-    if (!text || !pointer) {
+    if (!text || pointer === null || pointer === undefined) {
         return null;
     }
 
@@ -140,7 +140,8 @@ function findJsonValueRange(text, pointer) {
             });
 
         if (tokens.length === 0) {
-            return null;
+            const rootStart = skipWhitespace(text, 0);
+            return parseNestedValueRange(text, rootStart);
         }
 
         function walkRange(sourceText, index, tokenIndex) {
@@ -310,14 +311,20 @@ Shiny.addCustomMessageHandler('sync-diff-selection', function (message) {
     const op = message.operation || 'update';
 
     if (op === 'add') {
-        if (message.compare_path) {
+        if (message.base_path !== null && message.base_path !== undefined) {
+            applySelectionToEditor('base_text', message.base_text, message.base_path, 'update', 'base');
+        }
+        if (message.compare_path !== null && message.compare_path !== undefined) {
             applySelectionToEditor('compare_text', message.compare_text, message.compare_path, op, 'compare');
         }
         return;
     }
 
     if (op === 'remove') {
-        if (message.base_path) {
+        if (message.compare_path !== null && message.compare_path !== undefined) {
+            applySelectionToEditor('compare_text', message.compare_text, message.compare_path, 'update', 'compare');
+        }
+        if (message.base_path !== null && message.base_path !== undefined) {
             applySelectionToEditor('base_text', message.base_text, message.base_path, op, 'base');
         }
         return;
