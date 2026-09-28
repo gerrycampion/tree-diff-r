@@ -227,6 +227,81 @@ textarea {
     display: none;
 }
 
+.diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.diff-table th,
+.diff-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.diff-table-row {
+    cursor: pointer;
+}
+
+.diff-table-row.diff-add,
+.diff-output-item.diff-add {
+    background: rgba(34, 197, 94, 0.10);
+    border-left: 3px solid rgba(34, 197, 94, 0.9);
+}
+
+.diff-table-row.diff-remove,
+.diff-output-item.diff-remove {
+    background: rgba(239, 68, 68, 0.10);
+    border-left: 3px solid rgba(239, 68, 68, 0.9);
+}
+
+.diff-table-row.diff-update,
+.diff-output-item.diff-update {
+    background: rgba(245, 158, 11, 0.10);
+    border-left: 3px solid rgba(245, 158, 11, 0.9);
+}
+
+.ace_marker-layer .diff-marker {
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.ace_marker-layer .diff-marker.diff-add {
+    background: rgba(34, 197, 94, 0.26);
+}
+
+.ace_marker-layer .diff-marker.diff-remove {
+    background: rgba(239, 68, 68, 0.26);
+}
+
+.ace_marker-layer .diff-marker.diff-update {
+    background: rgba(245, 158, 11, 0.26);
+}
+
+.diff-table-row.selected,
+.diff-output-item.selected {
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.55);
+}
+
+.diff-output-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.diff-output-item {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(17, 24, 39, 0.65);
+    cursor: pointer;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
 .result-body {
     padding: 16px;
 }
