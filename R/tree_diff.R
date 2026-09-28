@@ -28,8 +28,8 @@ is_array_like <- function(x) {
   is.list(x) && is.null(names(x))
 }
 
-path_join <- function(base_pointer, key) {
-  if (is.null(base_pointer) || base_pointer == "") {
+path_join <- function(pointer, key) {
+  if (is.null(pointer) || pointer == "") {
     if (is.null(key) || key == "") {
       return("/")
     }
@@ -37,10 +37,10 @@ path_join <- function(base_pointer, key) {
   }
 
   if (is.null(key) || key == "") {
-    return(base_pointer)
+    return(pointer)
   }
 
-  paste0(base_pointer, "/", key)
+  paste0(pointer, "/", key)
 }
 
 flatten_diff_results <- function(results) {
@@ -199,7 +199,7 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
     list(
       op = "remove",
       path_base = path_join(base_pointer, key),
-      path_compare = path_join(compare_pointer, key),
+      path_compare = compare_pointer,
       value_base = base_object[[key]]
     )
   })
@@ -207,7 +207,7 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
   additions <- lapply(setdiff(compare_keys, base_keys), function(key) {
     list(
       op = "add",
-      path_base = path_join(base_pointer, key),
+      path_base = base_pointer,
       path_compare = path_join(compare_pointer, key),
       value_compare = compare_object[[key]]
     )
@@ -296,7 +296,7 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
 
 diff_value <- function(base_value, compare_value, base_pointer = "", compare_pointer = "") {
   if (is.null(base_value) || is.null(compare_value) ||
-      (is_scalarish(base_value) && is_scalarish(compare_value))) {
+    (is_scalarish(base_value) && is_scalarish(compare_value))) {
     result <- diff_scalar(base_value, compare_value, base_pointer, compare_pointer)
     return(sort_diff_results(result))
   }
