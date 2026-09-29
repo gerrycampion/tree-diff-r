@@ -150,6 +150,16 @@ body {
     margin-bottom: 18px;
 }
 
+.input-toolbar {
+    justify-content: flex-start;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.input-toolbar .shiny-input-container {
+    margin-bottom: 0;
+}
+
 .btn-primary,
 .btn-secondary {
     border-radius: 10px;

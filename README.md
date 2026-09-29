@@ -1,15 +1,15 @@
 # tree-diff-r
 
-A lightweight JSON tree diff utility in R, together with a Shiny browser UI for comparing two JSON payloads side-by-side in the browser.
+A lightweight JSON, XML, and CSV tree diff utility in R, together with a Shiny browser UI for comparing structured files side-by-side.
 
 ## What it does
 
 This project mirrors the core behavior of the Python version in the workspace:
 
-- recursively compares nested JSON-like objects
+- recursively compares JSON structures, XML elements, and CSV rows
 - diffs scalar values, adds, removes, and moves within arrays
 - keeps list reordering and nested object changes readable
-- exposes the same diff logic in a Shiny app that lets a user paste JSON text or upload files
+- exposes the same diff logic in a Shiny app that lets users paste or upload supported files
 
 ## Live demo
 
@@ -71,10 +71,11 @@ shiny::runApp("app.R")
 
 The browser will open a local Shiny UI where you can:
 
-- paste JSON into the two text areas
-- upload two JSON files
+- choose the JSON, XML, or CSV sample pair
+- paste or upload two inputs; file extensions and sample selection set the input type automatically
+- choose JSON, XML, or CSV manually when entering text
 - click the diff button
-- inspect the pretty-printed result in the browser
+- inspect the structured diff and its paths in the browser
 
 ## Run the library directly
 
@@ -84,6 +85,8 @@ base <- jsonlite::fromJSON("samples/base.json", simplifyVector = FALSE)
 compare <- jsonlite::fromJSON("samples/compare.json", simplifyVector = FALSE)
 print(diff_value(base, compare))
 ```
+
+The Shiny app also accepts XML and CSV text through `compute_format_diff()`. XML paths use XPath-style element, attribute, and text segments. CSV paths use one-based row numbers and column names. The XML parser is provided by `xml2` and is included in `renv.lock`.
 
 ## GitHub Pages / static export
 
@@ -103,5 +106,5 @@ After the workflow runs on `main`, the static app is available through the repos
 
 ## Sample data
 
-The project includes sample inputs in the `samples/` folder and an expected diff output in `samples/diff_paths.json`.
+The project includes JSON sample inputs in `samples/` and XML and CSV sample pairs in `samples/xml/` and `samples/csv/`. The app exposes all three pairs through its Sample set selector.
 

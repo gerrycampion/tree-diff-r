@@ -28,19 +28,160 @@ is_array_like <- function(x) {
   is.list(x) && is.null(names(x))
 }
 
-path_join <- function(pointer, key) {
+escape_path_segment <- function(key, format) {
+  key <- as.character(key)
+  if (identical(format, "json")) {
+    key <- gsub("~", "~0", key, fixed = TRUE)
+    return(gsub("/", "~1", key, fixed = TRUE))
+  }
+  if (identical(format, "csv")) {
+    characters <- strsplit(key, "", fixed = TRUE)[[1]]
+    escaped <- vapply(characters, function(character) {
+      if (character %in% c("\\", ",")) paste0("\\", character) else character
+    }, character(1), USE.NAMES = FALSE)
+    return(paste0(escaped, collapse = ""))
+  }
+  key
+}
+
+path_join <- function(pointer, key, format = "json", parent = NULL) {
+  if (identical(format, "xml") && identical(attr(parent, "tree_diff_segment"), "xml_children")) {
+    if (is.null(key) || !nzchar(key)) {
+      return(pointer)
+    }
+    return(paste0(pointer, "[", as.integer(key) + 1L, "]"))
+  }
+
+  if (identical(format, "csv")) {
+    parent_segment <- attr(parent, "tree_diff_segment")
+    if (identical(parent_segment, "csv_rows")) {
+      if (!nzchar(key)) {
+        return(pointer)
+      }
+      return(as.character(as.integer(key) + 1L))
+    }
+    if (identical(parent_segment, "csv_columns")) {
+      if (!nzchar(key)) {
+        return(pointer)
+      }
+      return(escape_path_segment(parent[[as.integer(key) + 1L]], "csv"))
+    }
+    if (identical(attr(parent, "tree_diff_root"), "csv") && key %in% c("columns", "row")) {
+      return("")
+    }
+    if (!nzchar(pointer) || !nzchar(key)) {
+      return(if (nzchar(key)) escape_path_segment(key, "csv") else pointer)
+    }
+    return(paste0(pointer, ",", escape_path_segment(key, "csv")))
+  }
+
   if (is.null(pointer) || pointer == "") {
     if (is.null(key) || key == "") {
       return("/")
     }
-    return(paste0("/", key))
+    return(paste0("/", escape_path_segment(key, format)))
   }
 
   if (is.null(key) || key == "") {
     return(pointer)
   }
 
-  paste0(pointer, "/", key)
+  if (identical(format, "xml")) {
+    if (identical(key, "#text")) {
+      return(paste0(pointer, "/text()"))
+    }
+    return(paste0(pointer, "/", key))
+  }
+  paste0(pointer, "/", escape_path_segment(key, format))
+}
+
+parse_csv_input <- function(raw_text) {
+  text <- sub("^\\ufeff", "", raw_text)
+  if (!nzchar(trimws(text))) {
+    records <- data.frame()
+  } else {
+    connection <- textConnection(text)
+    on.exit(close(connection))
+    records <- utils::read.csv(
+      connection,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      colClasses = "character",
+      na.strings = character(),
+      strip.white = FALSE,
+      fill = FALSE,
+      comment.char = ""
+    )
+  }
+
+  headers <- names(records)
+  if (length(headers) != length(unique(headers))) {
+    stop("CSV column names must be unique.", call. = FALSE)
+  }
+
+  rows <- lapply(seq_len(nrow(records)), function(row_index) {
+    as.list(records[row_index, , drop = FALSE])
+  })
+  names(rows) <- NULL
+  attr(rows, "tree_diff_segment") <- "csv_rows"
+  columns <- as.list(headers)
+  names(columns) <- NULL
+  attr(columns, "tree_diff_segment") <- "csv_columns"
+
+  result <- list(columns = columns, row = rows)
+  attr(result, "tree_diff_root") <- "csv"
+  result
+}
+
+xml_element_to_tree <- function(element) {
+  attributes <- xml2::xml_attrs(element)
+  result <- as.list(attributes)
+  names(result) <- if (length(attributes) > 0L) paste0("@", names(attributes)) else character(0)
+
+  direct_text <- xml2::xml_text(xml2::xml_find_first(element, "./text()"), trim = TRUE)
+  if (length(direct_text) > 0L && !is.na(direct_text) && nzchar(direct_text)) {
+    result[["#text"]] <- direct_text
+  }
+
+  children <- xml2::xml_children(element)
+  if (length(children) > 0L) {
+    child_names <- xml2::xml_name(children)
+    for (child_name in unique(child_names)) {
+      child_nodes <- children[child_names == child_name]
+      child_values <- lapply(as.list(child_nodes), xml_element_to_tree)
+      attr(child_values, "tree_diff_segment") <- "xml_children"
+      result[[child_name]] <- child_values
+    }
+  }
+  result
+}
+
+parse_xml_input <- function(raw_text) {
+  document <- xml2::read_xml(raw_text)
+  root <- xml2::xml_root(document)
+  setNames(list(xml_element_to_tree(root)), xml2::xml_name(root))
+}
+
+parse_format_input <- function(raw_text, format, label = "Input") {
+  text <- trimws(raw_text)
+  if (!nzchar(text)) stop(sprintf("%s %s input is empty.", label, toupper(format)), call. = FALSE)
+  switch(format,
+    json = jsonlite::fromJSON(text, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+    xml = parse_xml_input(text),
+    csv = parse_csv_input(raw_text),
+    stop(sprintf("Unsupported input format: %s", format), call. = FALSE)
+  )
+}
+
+compute_format_diff <- function(base_text, compare_text, format) {
+  tryCatch(
+    {
+      base_data <- parse_format_input(base_text, format, "Base")
+      compare_data <- parse_format_input(compare_text, format, "Compare")
+      diff_value(base_data, compare_data, format = format)
+    },
+    error = function(err) list(error = conditionMessage(err))
+  )
 }
 
 flatten_diff_results <- function(results) {
@@ -189,7 +330,7 @@ diff_scalar <- function(base_value, compare_value, base_pointer = "", compare_po
   ))
 }
 
-diff_object <- function(base_object, compare_object, base_pointer = "", compare_pointer = "") {
+diff_object <- function(base_object, compare_object, base_pointer = "", compare_pointer = "", format = "json") {
   base_keys <- names(base_object)
   compare_keys <- names(compare_object)
   if (is.null(base_keys)) base_keys <- character(0)
@@ -198,7 +339,7 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
   deletions <- lapply(setdiff(base_keys, compare_keys), function(key) {
     list(
       op = "remove",
-      path_base = path_join(base_pointer, key),
+      path_base = path_join(base_pointer, key, format, base_object),
       path_compare = compare_pointer,
       value_base = base_object[[key]]
     )
@@ -208,7 +349,7 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
     list(
       op = "add",
       path_base = base_pointer,
-      path_compare = path_join(compare_pointer, key),
+      path_compare = path_join(compare_pointer, key, format, compare_object),
       value_compare = compare_object[[key]]
     )
   })
@@ -219,8 +360,9 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
     inner_updates <- diff_value(
       base_object[[key]],
       compare_object[[key]],
-      path_join(base_pointer, key),
-      path_join(compare_pointer, key)
+      path_join(base_pointer, key, format, base_object),
+      path_join(compare_pointer, key, format, compare_object),
+      format
     )
     if (length(inner_updates) > 0L) {
       updates <- c(updates, inner_updates)
@@ -230,7 +372,7 @@ diff_object <- function(base_object, compare_object, base_pointer = "", compare_
   sort_diff_results(c(deletions, additions, updates))
 }
 
-diff_array <- function(base_array, compare_array, base_pointer = "", compare_pointer = "") {
+diff_array <- function(base_array, compare_array, base_pointer = "", compare_pointer = "", format = "json") {
   matches <- match_array_items(base_array, compare_array)
   matched_base <- unique(vapply(matches, function(pair) pair[[1]], integer(1), USE.NAMES = FALSE))
   matched_compare <- unique(vapply(matches, function(pair) pair[[2]], integer(1), USE.NAMES = FALSE))
@@ -241,8 +383,8 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
   deletions <- lapply(base_unmatched, function(index) {
     list(
       op = "remove",
-      path_base = path_join(base_pointer, as.character(index - 1L)),
-      path_compare = path_join(compare_pointer, ""),
+      path_base = path_join(base_pointer, as.character(index - 1L), format, base_array),
+      path_compare = path_join(compare_pointer, "", format, compare_array),
       value_base = base_array[[index]]
     )
   })
@@ -250,8 +392,8 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
   additions <- lapply(compare_unmatched, function(index) {
     list(
       op = "add",
-      path_base = path_join(base_pointer, ""),
-      path_compare = path_join(compare_pointer, as.character(index - 1L)),
+      path_base = path_join(base_pointer, "", format, base_array),
+      path_compare = path_join(compare_pointer, as.character(index - 1L), format, compare_array),
       value_compare = compare_array[[index]]
     )
   })
@@ -266,8 +408,8 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
 
     list(
       op = "move",
-      path_base = path_join(base_pointer, as.character(base_index - 1L)),
-      path_compare = path_join(compare_pointer, as.character(compare_index - 1L)),
+      path_base = path_join(base_pointer, as.character(base_index - 1L), format, base_array),
+      path_compare = path_join(compare_pointer, as.character(compare_index - 1L), format, compare_array),
       value_base = base_array[[base_index]],
       value_compare = compare_array[[compare_index]]
     )
@@ -282,8 +424,9 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
     inner_updates <- diff_value(
       base_array[[base_index]],
       compare_array[[compare_index]],
-      path_join(base_pointer, as.character(base_index - 1L)),
-      path_join(compare_pointer, as.character(compare_index - 1L))
+      path_join(base_pointer, as.character(base_index - 1L), format, base_array),
+      path_join(compare_pointer, as.character(compare_index - 1L), format, compare_array),
+      format
     )
 
     if (length(inner_updates) > 0L) {
@@ -294,7 +437,7 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
   sort_diff_results(c(deletions, additions, moves, updates))
 }
 
-diff_value <- function(base_value, compare_value, base_pointer = "", compare_pointer = "") {
+diff_value <- function(base_value, compare_value, base_pointer = "", compare_pointer = "", format = "json") {
   if (is.null(base_value) || is.null(compare_value) ||
     (is_scalarish(base_value) && is_scalarish(compare_value))) {
     result <- diff_scalar(base_value, compare_value, base_pointer, compare_pointer)
@@ -302,11 +445,11 @@ diff_value <- function(base_value, compare_value, base_pointer = "", compare_poi
   }
 
   if (is_object_like(base_value) && is_object_like(compare_value)) {
-    return(diff_object(base_value, compare_value, base_pointer, compare_pointer))
+    return(diff_object(base_value, compare_value, base_pointer, compare_pointer, format))
   }
 
   if (is_array_like(base_value) && is_array_like(compare_value)) {
-    return(diff_array(base_value, compare_value, base_pointer, compare_pointer))
+    return(diff_array(base_value, compare_value, base_pointer, compare_pointer, format))
   }
 
   if (identical(base_value, compare_value)) {

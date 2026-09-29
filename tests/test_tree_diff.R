@@ -17,4 +17,62 @@ if (!identical(actual_paths, expected_json)) {
   stop("tree-diff-r output does not match the expected sample diff.")
 }
 
+xml_attribute_diff <- compute_format_diff(
+  '<catalog version="1"/>',
+  '<catalog version="2"/>',
+  "xml"
+)
+if (!identical(xml_attribute_diff[[1]]$path_base, "/catalog/@version")) {
+  stop("XML attributes should use XPath-style paths.")
+}
+
+xml_text_diff <- compute_format_diff(
+  "<root><item>A</item><item>B</item></root>",
+  "<root><item>B</item><item>A</item></root>",
+  "xml"
+)
+if (!all(vapply(xml_text_diff, function(item) grepl("/root/item\\[[12]\\]$", item$path_base), logical(1)))) {
+  stop("Repeated XML elements should include one-based element indexes.")
+}
+
+xml_add_diff <- compute_format_diff(
+  "<root><item>A</item></root>",
+  "<root><item>A</item><item>B</item></root>",
+  "xml"
+)
+if (length(xml_add_diff) != 1L || !identical(xml_add_diff[[1]]$path_base, "/root/item") ||
+  !identical(xml_add_diff[[1]]$path_compare, "/root/item[2]")) {
+  stop("XML additions should use a valid parent path and indexed target path.")
+}
+
+csv_diff <- compute_format_diff(
+  "name,value\nalpha,1\n",
+  "name,value\nalpha,2\n",
+  "csv"
+)
+if (length(csv_diff) != 1L || !identical(csv_diff[[1]]$path_base, "1,value")) {
+  stop("CSV cells should use row,column paths.")
+}
+
+csv_header <- paste0('"a,b', intToUtf8(92), 'c"', intToUtf8(10))
+csv_escaped_diff <- compute_format_diff(
+  paste0(csv_header, "1", intToUtf8(10)),
+  paste0(csv_header, "2", intToUtf8(10)),
+  "csv"
+)
+expected_csv_path <- paste0("1,a", intToUtf8(92), ",b", intToUtf8(92), intToUtf8(92), "c")
+if (length(csv_escaped_diff) != 1L || !identical(csv_escaped_diff[[1]]$path_base, expected_csv_path)) {
+  stop("CSV path separators should be escaped in column names.")
+}
+
+for (format in c("xml", "csv")) {
+  extension <- if (identical(format, "xml")) ".xml" else ".csv"
+  base_text <- paste(readLines(file.path("..", "samples", format, paste0("base", extension)), warn = FALSE), collapse = "\n")
+  compare_text <- paste(readLines(file.path("..", "samples", format, paste0("compare", extension)), warn = FALSE), collapse = "\n")
+  sample_diff <- compute_format_diff(base_text, compare_text, format)
+  if (length(sample_diff) == 1L && !is.null(sample_diff$error)) {
+    stop(sprintf("%s sample diff failed: %s", toupper(format), sample_diff$error))
+  }
+}
+
 cat("tree-diff-r sample test passed\n")

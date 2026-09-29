@@ -10,20 +10,22 @@ parse_json_input <- function(raw_text, label) {
 }
 
 compute_diff <- function(base_text, compare_text) {
-  tryCatch(
-    {
-      base_data <- parse_json_input(base_text, "Base")
-      compare_data <- parse_json_input(compare_text, "Compare")
-      diff_value(base_data, compare_data)
-    },
-    error = function(err) {
-      list(error = conditionMessage(err))
-    }
-  )
+  compute_format_diff(base_text, compare_text, "json")
 }
 
-base_sample_text <- paste(readLines(file.path("samples", "base.json"), warn = FALSE), collapse = "\n")
-compare_sample_text <- paste(readLines(file.path("samples", "compare.json"), warn = FALSE), collapse = "\n")
+sample_paths <- list(
+  json = c(base = file.path("samples", "base.json"), compare = file.path("samples", "compare.json")),
+  xml = c(base = file.path("samples", "xml", "base.xml"), compare = file.path("samples", "xml", "compare.xml")),
+  csv = c(base = file.path("samples", "csv", "base.csv"), compare = file.path("samples", "csv", "compare.csv"))
+)
+
+read_sample_text <- function(format, side) {
+  paste(readLines(sample_paths[[format]][[side]], warn = FALSE), collapse = "\n")
+}
+
+base_sample_text <- read_sample_text("json", "base")
+compare_sample_text <- read_sample_text("json", "compare")
+ace_mode <- function(format) if (identical(format, "csv")) "text" else format
 
 pretty_json_text <- function(raw_text) {
   text <- trimws(raw_text)
@@ -93,7 +95,7 @@ row_state_class <- function(op) {
 }
 
 ui <- shiny::fluidPage(
-  title = "tree-diff-r JSON diff v0.0.1",
+  title = "tree-diff-r structured data diff v0.0.1",
   shiny::includeCSS("www/styles.css"),
   shiny::includeScript("www/sync.js"),
   shiny::div(
@@ -103,20 +105,40 @@ ui <- shiny::fluidPage(
       shiny::div(
         class = "brand",
         "tree-diff-r",
-        shiny::tags$small("JSON diff explorer")
+        shiny::tags$small("Structured data diff explorer")
+      )
+    ),
+    shiny::div(
+      class = "toolbar input-toolbar",
+      shiny::selectInput(
+        "sample_set",
+        "Sample set",
+        choices = c("JSON" = "json", "XML" = "xml", "CSV" = "csv"),
+        selected = "json",
+        width = "180px"
+      ),
+      shiny::selectInput(
+        "input_format",
+        "Input type",
+        choices = c("JSON" = "json", "XML" = "xml", "CSV" = "csv"),
+        selected = "json",
+        width = "160px"
       )
     ),
     shiny::div(
       class = "editor-grid",
       shiny::div(
         class = "panel",
-        shiny::div(class = "panel-header", "Base JSON"),
+        shiny::div(class = "panel-header", "Base input"),
         shiny::div(
           class = "panel-body",
           shiny::div(
             class = "file-row",
-            shiny::fileInput("base_file", "Upload base JSON", accept = c(".json", ".txt"), width = "100%"),
-            shiny::actionButton("prettify_base", "Prettify", class = "btn-secondary")
+            shiny::fileInput("base_file", "Upload base file", accept = c(".json", ".xml", ".csv"), width = "100%"),
+            shiny::conditionalPanel(
+              condition = "input.input_format === 'json'",
+              shiny::actionButton("prettify_base", "Prettify JSON", class = "btn-secondary")
+            )
           ),
           shinyAce::aceEditor(
             "base_text",
@@ -140,13 +162,16 @@ ui <- shiny::fluidPage(
       ),
       shiny::div(
         class = "panel",
-        shiny::div(class = "panel-header", "Compare JSON"),
+        shiny::div(class = "panel-header", "Compare input"),
         shiny::div(
           class = "panel-body",
           shiny::div(
             class = "file-row",
-            shiny::fileInput("compare_file", "Upload compare JSON", accept = c(".json", ".txt"), width = "100%"),
-            shiny::actionButton("prettify_compare", "Prettify", class = "btn-secondary")
+            shiny::fileInput("compare_file", "Upload compare file", accept = c(".json", ".xml", ".csv"), width = "100%"),
+            shiny::conditionalPanel(
+              condition = "input.input_format === 'json'",
+              shiny::actionButton("prettify_compare", "Prettify JSON", class = "btn-secondary")
+            )
           ),
           shinyAce::aceEditor(
             "compare_text",
@@ -171,7 +196,7 @@ ui <- shiny::fluidPage(
     ),
     shiny::div(
       class = "toolbar",
-      shiny::actionButton("run_diff", "Compare JSON", class = "btn-primary")
+      shiny::actionButton("run_diff", "Compare inputs", class = "btn-primary")
     ),
     shiny::div(
       class = "result-panel",
@@ -193,33 +218,83 @@ ui <- shiny::fluidPage(
 )
 
 server <- function(input, output, session) {
+  active_format <- shiny::reactiveVal("json")
+  editor_values <- shiny::reactiveValues(
+    base = base_sample_text,
+    compare = compare_sample_text
+  )
   diff_result <- shiny::reactiveVal(compute_diff(base_sample_text, compare_sample_text))
   diff_status <- shiny::reactiveVal("live")
   selected_diff_row <- shiny::reactiveVal(NULL)
   last_computed <- shiny::reactiveValues(
     base = base_sample_text,
-    compare = compare_sample_text
+    compare = compare_sample_text,
+    format = "json"
   )
 
-  reconstruct_diff <- function() {
-    base_text <- input$base_text
-    compare_text <- input$compare_text
-    result <- compute_diff(base_text, compare_text)
+  update_format <- function(format) {
+    active_format(format)
+    mode <- ace_mode(format)
+    shinyAce::updateAceEditor(session, "base_text", mode = mode)
+    shinyAce::updateAceEditor(session, "compare_text", mode = mode)
+  }
+
+  reconstruct_diff <- function(base_text = editor_values$base, compare_text = editor_values$compare, format = active_format()) {
+    result <- compute_format_diff(base_text, compare_text, format)
     diff_result(result)
     last_computed$base <- base_text
     last_computed$compare <- compare_text
+    last_computed$format <- format
     diff_status(if (!is.null(result$error)) "error" else "live")
   }
 
+  shiny::observeEvent(input$input_format,
+    {
+      update_format(input$input_format)
+      reconstruct_diff(format = input$input_format)
+    },
+    ignoreInit = TRUE
+  )
+
+  shiny::observeEvent(input$base_text,
+    {
+      editor_values$base <- input$base_text
+    },
+    ignoreInit = TRUE,
+    priority = 200
+  )
+
+  shiny::observeEvent(input$compare_text,
+    {
+      editor_values$compare <- input$compare_text
+    },
+    ignoreInit = TRUE,
+    priority = 200
+  )
+
+  shiny::observeEvent(input$sample_set, {
+    format <- input$sample_set
+    base_text <- read_sample_text(format, "base")
+    compare_text <- read_sample_text(format, "compare")
+    editor_values$base <- base_text
+    editor_values$compare <- compare_text
+    update_format(format)
+    shiny::updateSelectInput(session, "input_format", selected = format)
+    shinyAce::updateAceEditor(session, "base_text", value = base_text, mode = ace_mode(format))
+    shinyAce::updateAceEditor(session, "compare_text", value = compare_text, mode = ace_mode(format))
+    reconstruct_diff(base_text, compare_text, format)
+  })
+
   shiny::observe(
     {
-      current_base <- input$base_text
-      current_compare <- input$compare_text
+      current_base <- editor_values$base
+      current_compare <- editor_values$compare
+      current_format <- active_format()
 
-      if (!is.null(current_base) && !is.null(current_compare)) {
-        if (!identical(current_base, last_computed$base) || !identical(current_compare, last_computed$compare)) {
-          diff_status("stale")
-        }
+      if (!identical(current_base, last_computed$base) || !identical(current_compare, last_computed$compare) || !identical(current_format, last_computed$format)) {
+        diff_status("stale")
+      } else if (is.null(diff_result()$error)) {
+        diff_status("live")
       }
     },
     priority = 100
@@ -227,28 +302,42 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$base_file, {
     if (!is.null(input$base_file$datapath)) {
-      base_text <- paste(readLines(input$base_file$datapath, warn = FALSE), collapse = "\n")
-      shinyAce::updateAceEditor(session, "base_text", value = base_text)
-      reconstruct_diff()
+      format <- tolower(tools::file_ext(input$base_file$name))
+      if (format %in% names(sample_paths)) {
+        base_text <- paste(readLines(input$base_file$datapath, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+        editor_values$base <- base_text
+        update_format(format)
+        shiny::updateSelectInput(session, "input_format", selected = format)
+        shinyAce::updateAceEditor(session, "base_text", value = base_text, mode = ace_mode(format))
+        reconstruct_diff(base_text, format = format)
+      }
     }
   })
 
   shiny::observeEvent(input$compare_file, {
     if (!is.null(input$compare_file$datapath)) {
-      compare_text <- paste(readLines(input$compare_file$datapath, warn = FALSE), collapse = "\n")
-      shinyAce::updateAceEditor(session, "compare_text", value = compare_text)
-      reconstruct_diff()
+      format <- tolower(tools::file_ext(input$compare_file$name))
+      if (format %in% names(sample_paths)) {
+        compare_text <- paste(readLines(input$compare_file$datapath, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+        editor_values$compare <- compare_text
+        update_format(format)
+        shiny::updateSelectInput(session, "input_format", selected = format)
+        shinyAce::updateAceEditor(session, "compare_text", value = compare_text, mode = ace_mode(format))
+        reconstruct_diff(compare_text = compare_text, format = format)
+      }
     }
   })
 
   shiny::observeEvent(input$prettify_base, {
-    pretty_text <- pretty_json_text(input$base_text)
+    pretty_text <- if (identical(active_format(), "json")) pretty_json_text(editor_values$base) else editor_values$base
+    editor_values$base <- pretty_text
     shinyAce::updateAceEditor(session, "base_text", value = pretty_text)
     reconstruct_diff()
   })
 
   shiny::observeEvent(input$prettify_compare, {
-    pretty_text <- pretty_json_text(input$compare_text)
+    pretty_text <- if (identical(active_format(), "json")) pretty_json_text(editor_values$compare) else editor_values$compare
+    editor_values$compare <- pretty_text
     shinyAce::updateAceEditor(session, "compare_text", value = pretty_text)
     reconstruct_diff()
   })
@@ -290,8 +379,9 @@ server <- function(input, output, session) {
         operation = if (is.null(item$op)) "" else item$op,
         base_path = if (is.null(item$path_base)) "" else item$path_base,
         compare_path = if (is.null(item$path_compare)) "" else item$path_compare,
-        base_text = input$base_text,
-        compare_text = input$compare_text
+        format = active_format(),
+        base_text = editor_values$base,
+        compare_text = editor_values$compare
       )
     )
   })
