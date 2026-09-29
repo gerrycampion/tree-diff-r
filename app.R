@@ -14,7 +14,7 @@ compute_diff <- function(base_text, compare_text) {
 }
 
 sample_paths <- list(
-  json = c(base = file.path("samples", "base.json"), compare = file.path("samples", "compare.json")),
+  json = c(base = file.path("samples", "json", "base.json"), compare = file.path("samples", "json", "compare.json")),
   xml = c(base = file.path("samples", "xml", "base.xml"), compare = file.path("samples", "xml", "compare.xml")),
   csv = c(base = file.path("samples", "csv", "base.csv"), compare = file.path("samples", "csv", "compare.csv"))
 )

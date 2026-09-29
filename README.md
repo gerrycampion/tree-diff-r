@@ -81,8 +81,8 @@ The browser will open a local Shiny UI where you can:
 
 ```r
 source("R/tree_diff.R")
-base <- jsonlite::fromJSON("samples/base.json", simplifyVector = FALSE)
-compare <- jsonlite::fromJSON("samples/compare.json", simplifyVector = FALSE)
+base <- jsonlite::fromJSON("samples/json/base.json", simplifyVector = FALSE)
+compare <- jsonlite::fromJSON("samples/json/compare.json", simplifyVector = FALSE)
 print(diff_value(base, compare))
 ```
 
@@ -106,5 +106,5 @@ After the workflow runs on `main`, the static app is available through the repos
 
 ## Sample data
 
-The project includes JSON sample inputs in `samples/` and XML and CSV sample pairs in `samples/xml/` and `samples/csv/`. The app exposes all three pairs through its Sample set selector.
+The project includes JSON, XML and CSV sample pairs inputs in `samples/`. The app exposes all three pairs through its Sample set selector.
 
