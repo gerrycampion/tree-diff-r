@@ -36,13 +36,23 @@ if (!all(vapply(xml_text_diff, function(item) grepl("/root/item\\[[12]\\]$", ite
 }
 
 xml_add_diff <- compute_format_diff(
-  "<root><item>A</item></root>",
-  "<root><item>A</item><item>B</item></root>",
+  "<root><tags><tag>A</tag></tags></root>",
+  "<root><tags><tag>A</tag><tag>B</tag></tags></root>",
   "xml"
 )
-if (length(xml_add_diff) != 1L || !identical(xml_add_diff[[1]]$path_base, "/root/item") ||
-  !identical(xml_add_diff[[1]]$path_compare, "/root/item[2]")) {
+if (length(xml_add_diff) != 1L || !identical(xml_add_diff[[1]]$path_base, "/root/tags[1]") ||
+  !identical(xml_add_diff[[1]]$path_compare, "/root/tags[1]/tag[2]")) {
   stop("XML additions should use a valid parent path and indexed target path.")
+}
+
+xml_remove_diff <- compute_format_diff(
+  "<root><tags><tag>A</tag><tag>B</tag></tags></root>",
+  "<root><tags><tag>A</tag></tags></root>",
+  "xml"
+)
+if (length(xml_remove_diff) != 1L || !identical(xml_remove_diff[[1]]$path_base, "/root/tags[1]/tag[2]") ||
+  !identical(xml_remove_diff[[1]]$path_compare, "/root/tags[1]")) {
+  stop("XML removals should use a valid parent path on the missing side.")
 }
 
 csv_diff <- compute_format_diff(

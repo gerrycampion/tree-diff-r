@@ -45,7 +45,8 @@ escape_path_segment <- function(key, format) {
 }
 
 path_join <- function(pointer, key, format = "json", parent = NULL) {
-  if (identical(format, "xml") && identical(attr(parent, "tree_diff_segment"), "xml_children")) {
+  xml_segment <- attr(parent, "tree_diff_segment")
+  if (identical(format, "xml") && !is.null(xml_segment)) {
     if (is.null(key) || !nzchar(key)) {
       return(pointer)
     }
@@ -93,6 +94,17 @@ path_join <- function(pointer, key, format = "json", parent = NULL) {
     return(paste0(pointer, "/", key))
   }
   paste0(pointer, "/", escape_path_segment(key, format))
+}
+
+array_parent_path <- function(pointer, parent, format) {
+  if (identical(format, "xml")) {
+    segment <- attr(parent, "tree_diff_segment")
+    suffix <- if (is.null(segment)) "" else paste0("/", segment)
+    if (nzchar(suffix) && endsWith(pointer, suffix)) {
+      return(substr(pointer, 1L, nchar(pointer) - nchar(suffix)))
+    }
+  }
+  pointer
 }
 
 parse_csv_input <- function(raw_text) {
@@ -149,7 +161,7 @@ xml_element_to_tree <- function(element) {
     for (child_name in unique(child_names)) {
       child_nodes <- children[child_names == child_name]
       child_values <- lapply(as.list(child_nodes), xml_element_to_tree)
-      attr(child_values, "tree_diff_segment") <- "xml_children"
+      attr(child_values, "tree_diff_segment") <- child_name
       result[[child_name]] <- child_values
     }
   }
@@ -384,7 +396,7 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
     list(
       op = "remove",
       path_base = path_join(base_pointer, as.character(index - 1L), format, base_array),
-      path_compare = path_join(compare_pointer, "", format, compare_array),
+      path_compare = array_parent_path(compare_pointer, compare_array, format),
       value_base = base_array[[index]]
     )
   })
@@ -392,7 +404,7 @@ diff_array <- function(base_array, compare_array, base_pointer = "", compare_poi
   additions <- lapply(compare_unmatched, function(index) {
     list(
       op = "add",
-      path_base = path_join(base_pointer, "", format, base_array),
+      path_base = array_parent_path(base_pointer, base_array, format),
       path_compare = path_join(compare_pointer, as.character(index - 1L), format, compare_array),
       value_compare = compare_array[[index]]
     )
