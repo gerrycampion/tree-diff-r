@@ -64,6 +64,12 @@ if (length(csv_diff) != 1L || !identical(csv_diff[[1]]$path_base, "1,value")) {
   stop("CSV cells should use row,column paths.")
 }
 
+csv_added_row <- compute_format_diff("id\n1\n", "id\n1\n2\n", "csv")
+if (length(csv_added_row) != 1L || !identical(csv_added_row[[1]]$path_base, "") ||
+  !identical(csv_added_row[[1]]$path_compare, "2")) {
+  stop("CSV row additions should use an empty whole-table path on the base side.")
+}
+
 csv_header <- paste0('"a,b', intToUtf8(92), 'c"', intToUtf8(10))
 csv_escaped_diff <- compute_format_diff(
   paste0(csv_header, "1", intToUtf8(10)),

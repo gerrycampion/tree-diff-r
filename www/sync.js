@@ -470,8 +470,11 @@ function splitCsvPath(path) {
 }
 
 function findCsvValueRange(text, path) {
-    if (!text || !path) {
+    if (!text) {
         return null;
+    }
+    if (path === '') {
+        return { start: 0, end: text.length };
     }
     const records = parseCsvRecords(text);
     if (records.length === 0) {
@@ -593,10 +596,10 @@ Shiny.addCustomMessageHandler('sync-diff-selection', function (message) {
         return;
     }
 
-    if (message.base_path) {
+    if (message.base_path || (format === 'csv' && message.base_path === '')) {
         applySelectionToEditor('base_text', message.base_text, message.base_path, op, 'base', format);
     }
-    if (message.compare_path) {
+    if (message.compare_path || (format === 'csv' && message.compare_path === '')) {
         applySelectionToEditor('compare_text', message.compare_text, message.compare_path, op, 'compare', format);
     }
 });
