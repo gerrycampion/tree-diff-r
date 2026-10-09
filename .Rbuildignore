@@ -1,0 +1,12 @@
+^\.git$
+^\.github$
+^\.gitignore$
+^\.Rprofile$
+^\.vscode$
+^renv$
+^renv\.lock$
+^app\.R$
+^samples$
+^www$
+^docs$^renv$
+^renv\.lock$

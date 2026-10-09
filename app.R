@@ -1,13 +1,10 @@
-source(file.path("R", "tree_diff.R"))
-
-parse_json_input <- function(raw_text, label) {
-  text <- trimws(raw_text)
-  if (identical(text, "")) {
-    stop(sprintf("%s JSON input is empty.", label), call. = FALSE)
-  }
-
-  jsonlite::fromJSON(text, simplifyVector = FALSE, simplifyDataFrame = FALSE)
-}
+library(jsonlite)
+library(xml2)
+sys.source(file.path("R", "format_json.R"), envir = environment())
+sys.source(file.path("R", "format_xml.R"), envir = environment())
+sys.source(file.path("R", "format_csv.R"), envir = environment())
+sys.source(file.path("R", "list_matcher_ngram.R"), envir = environment())
+sys.source(file.path("R", "tree_diff.R"), envir = environment())
 
 compute_diff <- function(base_text, compare_text) {
   compute_format_diff(base_text, compare_text, "json")

@@ -1,0 +1,20 @@
+Package: treediffr
+Title: Structured Data Tree Diff
+Version: 0.1.0
+Authors@R: person("Gerry", "Campion", role = c("aut", "cre"), email = "gerrycampion@gmail.com")
+Description: Compare JSON, XML, and CSV structures recursively and report
+    additions, removals, replacements, and moves with format-aware paths.
+License: MIT + file LICENSE
+URL: https://github.com/gerrycampion/tree-diff-r
+BugReports: https://github.com/gerrycampion/tree-diff-r/issues
+Encoding: UTF-8
+Depends: R (>= 3.6.0)
+Imports:
+    jsonlite,
+    stats,
+    utils,
+    xml2
+Suggests:
+    htmltools,
+    shiny,
+    shinyAce

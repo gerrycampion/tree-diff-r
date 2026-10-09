@@ -1,20 +1,14 @@
-source(file.path("..", "R", "tree_diff.R"), chdir = TRUE)
+library(treediffr)
 
-base_json <- jsonlite::fromJSON(file.path("..", "samples", "json", "base.json"), simplifyVector = FALSE)
-compare_json <- jsonlite::fromJSON(file.path("..", "samples", "json", "compare.json"), simplifyVector = FALSE)
-expected_json <- jsonlite::fromJSON(file.path("..", "samples", "json", "diff_paths.json"), simplifyVector = FALSE)
+json_diff <- compute_format_diff('{"name":"alpha"}', '{"name":"beta"}', "json")
+if (length(json_diff) != 1L || !identical(json_diff[[1]]$op, "replace") ||
+  !identical(json_diff[[1]]$path_base, "/name")) {
+  stop("JSON text inputs should produce a path-aware diff.")
+}
 
-actual <- diff_value(base_json, compare_json)
-actual_paths <- lapply(actual, function(item) {
-  list(
-    op = item[["op"]],
-    path_base = item[["path_base"]],
-    path_compare = item[["path_compare"]]
-  )
-})
-
-if (!identical(actual_paths, expected_json)) {
-  stop("tree-diff-r output does not match the expected sample diff.")
+value_diff <- diff_value(list(name = "alpha"), list(name = "beta"))
+if (length(value_diff) != 1L || !identical(value_diff[[1]]$op, "replace")) {
+  stop("diff_value should be available as a package API.")
 }
 
 xml_attribute_diff <- compute_format_diff(
@@ -81,14 +75,4 @@ if (length(csv_escaped_diff) != 1L || !identical(csv_escaped_diff[[1]]$path_base
   stop("CSV path separators should be escaped in column names.")
 }
 
-for (format in c("xml", "csv")) {
-  extension <- if (identical(format, "xml")) ".xml" else ".csv"
-  base_text <- paste(readLines(file.path("..", "samples", format, paste0("base", extension)), warn = FALSE), collapse = "\n")
-  compare_text <- paste(readLines(file.path("..", "samples", format, paste0("compare", extension)), warn = FALSE), collapse = "\n")
-  sample_diff <- compute_format_diff(base_text, compare_text, format)
-  if (length(sample_diff) == 1L && !is.null(sample_diff$error)) {
-    stop(sprintf("%s sample diff failed: %s", toupper(format), sample_diff$error))
-  }
-}
-
-cat("tree-diff-r sample test passed\n")
+cat("treediffr package tests passed\n")

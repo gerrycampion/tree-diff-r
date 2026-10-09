@@ -1,0 +1,78 @@
+ngram_tokens <- function(text, gram_size) {
+    if (is.null(text) || is.na(text) || nchar(text) == 0L) {
+        return(character(0))
+    }
+    text <- gsub("\\n", " ", text, fixed = TRUE)
+    if (nchar(text) <= gram_size) {
+        return(text)
+    }
+    start_positions <- seq_len(nchar(text) - gram_size + 1L)
+    vapply(start_positions, function(pos) substr(text, pos, pos + gram_size - 1L), character(1), USE.NAMES = FALSE)
+}
+
+ngram_similarity <- function(left, right, gram_size = 2L) {
+    left_tokens <- ngram_tokens(as.character(left), gram_size)
+    right_tokens <- ngram_tokens(as.character(right), gram_size)
+    if (length(left_tokens) == 0L || length(right_tokens) == 0L) {
+        return(0)
+    }
+    intersection_size <- length(intersect(left_tokens, right_tokens))
+    union_size <- length(unique(c(left_tokens, right_tokens)))
+    if (union_size == 0L) {
+        return(0)
+    }
+    intersection_size / union_size
+}
+
+match_array_items <- function(base_array, compare_array) {
+    base_text <- vapply(seq_along(base_array), function(i) canonical_json(base_array[[i]]), character(1), USE.NAMES = FALSE)
+    compare_text <- vapply(seq_along(compare_array), function(i) canonical_json(compare_array[[i]]), character(1), USE.NAMES = FALSE)
+    base_lookup <- split(seq_along(base_text), base_text)
+    compare_lookup <- split(seq_along(compare_text), compare_text)
+    shared_keys <- sort(unique(c(names(base_lookup), names(compare_lookup))))
+    matches <- list()
+    matched_base <- rep(FALSE, length(base_text))
+    matched_compare <- rep(FALSE, length(compare_text))
+
+    for (key in shared_keys) {
+        base_matches <- base_lookup[[key]]
+        compare_matches <- compare_lookup[[key]]
+        if (is.null(base_matches) || is.null(compare_matches)) next
+        limit <- min(length(base_matches), length(compare_matches))
+        for (idx in seq_len(limit)) {
+            base_idx <- base_matches[[idx]]
+            compare_idx <- compare_matches[[idx]]
+            if (!matched_base[[base_idx]] && !matched_compare[[compare_idx]]) {
+                matches[[length(matches) + 1L]] <- c(base_idx, compare_idx)
+                matched_base[[base_idx]] <- TRUE
+                matched_compare[[compare_idx]] <- TRUE
+            }
+        }
+    }
+
+    remaining_base <- which(!matched_base)
+    remaining_compare <- which(!matched_compare)
+    if (length(remaining_base) > 0L && length(remaining_compare) > 0L) {
+        gram_size <- max(2L, min(12L, floor(mean(nchar(c(base_text, compare_text)), na.rm = TRUE) / 2)))
+        while (length(remaining_base) > 0L && length(remaining_compare) > 0L) {
+            best_score <- -1
+            best_pair <- NULL
+            for (base_idx in remaining_base) {
+                for (compare_idx in remaining_compare) {
+                    score <- ngram_similarity(base_text[[base_idx]], compare_text[[compare_idx]], gram_size)
+                    if (score > best_score) {
+                        best_score <- score
+                        best_pair <- c(base_idx, compare_idx)
+                    }
+                }
+            }
+            if (is.null(best_pair) || best_score <= 0) break
+            matches[[length(matches) + 1L]] <- best_pair
+            matched_base[[best_pair[[1]]]] <- TRUE
+            matched_compare[[best_pair[[2]]]] <- TRUE
+            remaining_base <- setdiff(remaining_base, best_pair[[1]])
+            remaining_compare <- setdiff(remaining_compare, best_pair[[2]])
+        }
+    }
+    matches
+}

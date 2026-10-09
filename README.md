@@ -79,14 +79,32 @@ The browser will open a local Shiny UI where you can:
 
 ## Run the library directly
 
+Install the package from the project root:
+
+```powershell
+R CMD INSTALL .
+```
+
+The package exports `diff_value()` for comparing parsed values and `compute_format_diff()` for parsing and comparing JSON, XML, or CSV text:
+
 ```r
-source("R/tree_diff.R")
+library(treediffr)
+
 base <- jsonlite::fromJSON("samples/json/base.json", simplifyVector = FALSE)
 compare <- jsonlite::fromJSON("samples/json/compare.json", simplifyVector = FALSE)
 print(diff_value(base, compare))
+print(compute_format_diff("{\"value\":1}", "{\"value\":2}", "json"))
 ```
 
 The Shiny app also accepts XML and CSV text through `compute_format_diff()`. XML paths use XPath-style element, attribute, and text segments. CSV paths use one-based row numbers and column names. The XML parser is provided by `xml2` and is included in `renv.lock`.
+
+## R code layout
+
+- `R/tree_diff.R` contains the recursive diff engine and public functions.
+- `R/format_json.R`, `R/format_xml.R`, and `R/format_csv.R` contain independent parsers and path mappings.
+- `R/list_matcher_ngram.R` contains array-item matching.
+
+`NAMESPACE` declares the package's imports and exported API. The Shiny app sources the same R files to remain compatible with Shinylive export.
 
 ## GitHub Pages / static export
 
